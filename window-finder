@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Find rapidly any open window and switch to that.
+Find rapidly any open window and switch to that. 
 
 Required additional software:
  * dmenu
@@ -9,6 +9,7 @@ Required additional software:
 
 import commands
 import psutil
+import os
 
 __author__ = "Tero Mononen"
 __email__ = "tero@mononen.eu"
@@ -16,49 +17,50 @@ __email__ = "tero@mononen.eu"
 
 class WindowFinder:
     # Processes that are excluded from the list of open windows
-    ignoredProcesses = {"xfce4-panel",
-                        "xfdesktop"}
-    listWindowsCommand = "wmctrl -l -p"
-    dmenuCommand = "dmenu -i -l 20 -m 0"
-    selectedWindowCommands = {"wmctrl -i -r {} -b remove,shaded",
-                              "wmctrl -i -a {}"}
+    _ignored_processes = {"xfce4-panel",
+                          "xfdesktop"}
+
+    _cmd_dmenu = "dmenu -i -l 20 -m 0"
+    _cmd_list_windows = "wmctrl -l -p"
+    _cmd_select_window = {"wmctrl -i -r {} -b remove,shaded",
+                          "wmctrl -i -a {}"}
 
     def run(self):
-        windows = self.listWindows()
-        dmenuInput = "\n".join(sorted(windows.keys()))
-        echoCommand = 'echo "{}"|'.format(dmenuInput)
-        selected = commands.getstatusoutput(echoCommand + self.dmenuCommand)[1]
+        windows = self.__list_windows()
+        dmenu_input = "\n".join(sorted(windows.keys()))
+        echo_cmd = 'echo "{}"|'.format(dmenu_input)
+        selected = commands.getstatusoutput(echo_cmd + self._cmd_dmenu)[1]
         if selected in windows:
-            self.processSelectedWindow(windows[selected])
+            self.__select_window(windows[selected])
+        elif len(selected) > 0:
+            os.system("which {} && nohup {} &> /dev/null &".format(selected, selected))
 
-    def listWindows(self):
+    def __list_windows(self):
         windows = {}
-        for line in commands.getstatusoutput(self.listWindowsCommand)[1].splitlines():
+        for line in commands.getstatusoutput(self._cmd_list_windows)[1].splitlines():
             tokens = line.split()
-            windowId = tokens[0]
+            window_id = tokens[0]
             workspace = int(tokens[1])
             pid = int(tokens[2])
-            windowTitle = " ".join(tokens[4:])
+            window_title = " ".join(tokens[4:])
             if pid < 1:
                 continue
-            processName = self.fetchProcessName(pid)
-            if processName is None:
+            process_name = self.__fetch_process_name(pid)
+            if process_name is None:
                 continue
-            workspaceString = " "
-            if workspace >= 0:
-                workspaceString = "{}".format(workspace)
-            menuItem = "{} {}: {}".format(workspaceString, processName, windowTitle)
-            windows[menuItem] = windowId
+            workspace_string = str(workspace) if workspace >= 0 else " "
+            menu_item = "{} {}: {}".format(workspace_string, process_name, window_title)
+            windows[menu_item] = window_id
         return windows
 
-    def processSelectedWindow(self, windowId):
-        for command in self.selectedWindowCommands:
+    def __select_window(self, windowId):
+        for command in self._cmd_select_window:
             commands.getstatusoutput(command.format(windowId))
 
-    def fetchProcessName(self, pid):
+    def __fetch_process_name(self, pid):
         process = psutil.Process(pid)
-        processName = process.name()
-        return processName if processName not in self.ignoredProcesses else None
+        process_name = process.name()
+        return process_name if process_name not in self._ignored_processes else None
 
 
 if __name__ == "__main__":

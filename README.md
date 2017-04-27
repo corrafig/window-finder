@@ -12,7 +12,7 @@ The window list contains following filterable data:
 
 When window is selected from the list:
 * workspace is changed to same workspace of selected window
-* selectedw indow is unshaded
+* selected window is unshaded
 * focus is moved to selected window
 
 # Screenshots
@@ -22,6 +22,8 @@ When window is selected from the list:
 ![](https://mononen.eu/u/data/window-finder/window-finder1.png)
 ## List can be filtered for example by window title
 ![](https://mononen.eu/u/data/window-finder/window-finder2.png)
+## Search filter is executed as a command when it doesn't match to any open window
+![](https://mononen.eu/u/data/window-finder/window-finder3.png)
 
 # Requirements
 * python
