@@ -1,15 +1,17 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
-Find rapidly any open window and switch to that. 
+Find rapidly any open window and switch to that. Works also as an application launcher.
 
 Required additional software:
  * dmenu
  * wmctrl
 """
 
-import commands
+import subprocess
 import psutil
 import os
+
+from psutil import NoSuchProcess
 
 __author__ = "Tero Mononen"
 __email__ = "tero@mononen.eu"
@@ -29,7 +31,7 @@ class WindowFinder:
         windows = self.__list_windows()
         dmenu_input = "\n".join(sorted(windows.keys()))
         echo_cmd = 'echo "{}"|'.format(dmenu_input)
-        selected = commands.getstatusoutput(echo_cmd + self._cmd_dmenu)[1]
+        selected = subprocess.getstatusoutput(echo_cmd + self._cmd_dmenu)[1]
         if selected in windows:
             self.__select_window(windows[selected])
         elif len(selected) > 0:
@@ -37,7 +39,7 @@ class WindowFinder:
 
     def __list_windows(self):
         windows = {}
-        for line in commands.getstatusoutput(self._cmd_list_windows)[1].splitlines():
+        for line in subprocess.getstatusoutput(self._cmd_list_windows)[1].splitlines():
             tokens = line.split()
             window_id = tokens[0]
             workspace = int(tokens[1])
@@ -55,10 +57,13 @@ class WindowFinder:
 
     def __select_window(self, windowId):
         for command in self._cmd_select_window:
-            commands.getstatusoutput(command.format(windowId))
+            subprocess.getstatusoutput(command.format(windowId))
 
     def __fetch_process_name(self, pid):
-        process = psutil.Process(pid)
+        try:
+            process = psutil.Process(pid)
+        except NoSuchProcess:
+            return None
         process_name = process.name()
         return process_name if process_name not in self._ignored_processes else None
 
